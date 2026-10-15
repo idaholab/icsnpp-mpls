@@ -1,0 +1,2 @@
+Zeek::MPLSLogging - Adds logging for MPLS headers (dynamic, version)
+    [Packet Analyzer] MPLSLogger (ANALYZER_MPLSLOGGER, enabled)

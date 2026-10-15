@@ -1,0 +1,68 @@
+name: build-and-test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zeek-8:
+    name: Zeek ${{ matrix.zeek }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        zeek:
+          - 8.0.10
+          - 8.1.2
+    container:
+      image: zeek/zeek:${{ matrix.zeek }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        shell: bash
+        run: |
+          if ! command -v cmake >/dev/null ||
+             ! command -v make >/dev/null ||
+             ! command -v c++ >/dev/null ||
+             [[ ! -f /usr/include/openssl/ssl.h ]] ||
+             [[ ! -f /usr/include/pcap.h ]]; then
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              build-essential cmake libpcap-dev libssl-dev
+          fi
+
+      - name: Show toolchain
+        run: |
+          zeek --version
+          cmake --version
+          btest --version
+
+      - name: Build plugin
+        run: |
+          ./configure
+          cmake --build build --parallel 2
+
+      - name: Verify plugin registration
+        shell: bash
+        run: |
+          plugin_listing="$(ZEEK_PLUGIN_PATH="${PWD}/build" zeek -NN Zeek::MPLSLogging)"
+          grep -q "ANALYZER_MPLSLOGGER" <<<"${plugin_listing}"
+
+      - name: Run tests
+        run: |
+          cd testing
+          btest -c btest.cfg
