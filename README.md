@@ -38,6 +38,20 @@ Confirm that Zeek can find the native plugin:
 zeek -NN Zeek::MPLSLogging
 ```
 
+From a repository checkout, process the included MPLS capture and inspect the
+decoded label stack:
+
+```console
+zeek -C -r testing/Traces/mpls.pcap local
+zeek-cut labels experimentals bottom_of_stack time_to_live < mpls_header.log
+```
+
+The capture contains one MPLS packet and produces:
+
+```text
+18	0	T	254
+```
+
 To update or remove it later:
 
 ```console
