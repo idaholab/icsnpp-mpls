@@ -23,9 +23,6 @@ MPLSLogger::MPLSLogger() : zeek::packet_analysis::Analyzer("MPLSLogger") {}
 bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) {
     // Skip the MPLS label stack.
     bool end_of_stack = false;
-    static uint64_t count = 0;
-    printf("MPLS analyzer entry #%llu\n",
-       (unsigned long long)++count);
     zeek::IntrusivePtr<zeek::RecordType> mpls_header = zeek::id::find_type<zeek::RecordType>("MPLSLogger::MPLS_Header");
     zeek::IntrusivePtr<zeek::RecordVal> mpls_record = zeek::make_intrusive<zeek::RecordVal>(mpls_header);
     zeek::EventHandlerPtr event = zeek::event_registry->Lookup("MPLSLogger::log_mpls_header");
@@ -45,7 +42,6 @@ bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) 
             Weird("truncated_link_header", packet);
             return false;
         }
-        printf("data ptr = %p\n", (void*)data);
 
         uint32_t header =
             ((uint32_t)data[0] << 24) |
@@ -59,9 +55,6 @@ bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) 
         uint8_t ttl = header & 0xFF;
 
         end_of_stack = bos;
-        
-        printf("MPLS Header: label=%u, exp=%u, bos=%d, ttl=%u\n", label, exp, end_of_stack, ttl);
-        
 
         labels->Assign(labels->Size(), make_intrusive<CountVal>(label));
         exps->Assign(exps->Size(), make_intrusive<CountVal>(exp));
@@ -70,8 +63,6 @@ bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) 
         data += 4;
         len -= 4;
     }
-
-    printf("Exited loop. end_of_stack=%d\n", end_of_stack);
 
     double ts = static_cast<double>(packet->ts.tv_sec) +
                 static_cast<double>(packet->ts.tv_usec) / 1e6;
@@ -86,8 +77,6 @@ bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) 
     args.push_back(mpls_record);
 
     event_mgr.Enqueue(event, args);
-
-    printf("data ptr = %p\n", (void*)data);
 
     // According to RFC3032 the encapsulated protocol is not encoded.
     // We use the configured default analyzer.

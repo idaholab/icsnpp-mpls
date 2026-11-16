@@ -22,12 +22,6 @@ export {
 }
 
 event zeek_init() {
-    # Untagged MPLS
-    PacketAnalyzer::register_packet_analyzer(PacketAnalyzer::ANALYZER_ETHERNET, 0x8847, PacketAnalyzer::ANALYZER_MPLSLOGGER);
-
-    # VLAN-tagged MPLS
-    PacketAnalyzer::register_packet_analyzer(PacketAnalyzer::ANALYZER_VLAN, 0x8847, PacketAnalyzer::ANALYZER_MPLSLOGGER);
-
     Log::create_stream(MPLSLogger::LOG_HEADER, [$columns=MPLS_Header,
                                                 $ev=log_mpls_header_stream,
                                                 $path="mpls_header",

@@ -36,6 +36,17 @@ public:
 
         return config;
     }
+
+protected:
+    void InitPostScript() override
+    {
+        zeek::plugin::Plugin::InitPostScript();
+
+        const auto mpls = zeek::packet_mgr->GetComponentTag("MPLS");
+        const auto mpls_logger = zeek::packet_mgr->GetComponentTag("MPLSLogger");
+        zeek::packet_mgr->AddComponentMapping(mpls, mpls_logger);
+        zeek::packet_mgr->DisableAnalyzer(mpls);
+    }
 };
 
 Plugin plugin;
