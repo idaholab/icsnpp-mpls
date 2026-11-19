@@ -1,0 +1,52 @@
+0.2.0 | 2026-11-19
+
+  * Breaking: the plugin is now ICSNPP::MPLS (was Zeek::MPLSLogging).
+    After upgrading a manual install, remove the old Zeek_MPLSLogging
+    directory from the plugin path. Both versions register an analyzer
+    named MPLSLogger.
+
+  * Breaking: mpls_header.log field changes. experimentals is renamed
+    traffic_class (RFC 5462). bottom_of_stack is removed; the last
+    entry in labels is always the bottom of the stack.
+
+  * Fix labels above 65535 being truncated to 16 bits. MPLS labels are
+    20 bits, and Junos assigns dynamic labels starting at 299776.
+
+  * Link mpls_header.log to the traffic it carries: uid, id, and
+    is_orig of the connection the payload belongs to, plus
+    src_l2_addr, dst_l2_addr, vlan, and inner_vlan from the frame that
+    carried the label stack.
+
+  * Summarize mpls_header.log by default. Packets that share a
+    connection, direction, link-layer addresses, VLANs, label stack,
+    and payload type collapse into one record per
+    MPLSLogger::summary_interval (default 1 min), with new packets and
+    last_ts fields. Set MPLSLogger::log_every_packet to T for one
+    record per packet.
+
+  * Detect the payload after the bottom label instead of assuming IP.
+    Handles explicit NULL labels, IPv4 and IPv6, Ethernet pseudowires
+    with or without a control word, and PW-ACH/G-ACh headers. ACH
+    channels carrying IP are forwarded; other channel types are logged
+    and not forwarded. The result goes in the new payload field.
+    MPLSLogger::detect_payload turns detection off.
+
+  * Record at most MPLSLogger::max_label_stack_depth (default 16) label
+    stack entries. Deeper stacks are still parsed and raise an
+    excessive_mpls_label_stack weird.
+
+  * Resolve the record type, field offsets, and event handler once at
+    initialization instead of on every packet, and skip building log
+    values when nothing handles the event. Fix an off-by-one in the
+    truncated-stack check.
+
+  * Rename events: the analyzer raises MPLSLogger::mpls_header, and the
+    log stream raises MPLSLogger::log_mpls_header.
+
+  * Tests: synthetic traces for 20-bit labels and payload detection,
+    and trace tests for 16 sample captures through
+    testing/Scripts/run-mpls-trace. Remove the mpls.pcap test and its
+    stale conn.log baseline.
+
+  * Remove the "log writer" zkg tag, and update the zkg.meta
+    description and template namespace.

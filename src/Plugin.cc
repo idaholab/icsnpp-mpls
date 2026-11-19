@@ -17,17 +17,17 @@
 
 
 
-namespace plugin { namespace Zeek_MPLSLogger {
+namespace plugin { namespace ICSNPP_MPLS {
 
 class Plugin : public zeek::plugin::Plugin {
 public:
     zeek::plugin::Configuration Configure() override
     {
         zeek::plugin::Configuration config;
-        config.name = "Zeek::MPLSLogging";
+        config.name = "ICSNPP::MPLS";
         config.description = "Adds logging for MPLS headers";
-        config.version.major = 1;
-        config.version.minor = 0;
+        config.version.major = 0;
+        config.version.minor = 2;
 
         // Register our replacement
         AddComponent(new zeek::packet_analysis::Component(

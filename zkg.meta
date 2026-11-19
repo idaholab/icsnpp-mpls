@@ -3,10 +3,11 @@ script_dir = zkg-loader
 build_command = ./configure && cmake --build build
 test_command = cd testing && btest -c btest.cfg
 summary = Zeek plugin for parsing and logging MPLS label stacks
-description = Parses MPLS unicast label stacks carried over Ethernet or VLANs
-	and records the decoded labels, traffic class values, bottom-of-stack flags,
-	and TTL values in mpls_header.log.
-tags = mpls, MPLS, ics, ICS, CISA, INL, ICSNPP, icsnpp, zeek plugin, log writer, packet analyzer
+description = Parses MPLS unicast label stacks carried over Ethernet or VLANs,
+	records the decoded labels, traffic class values, and TTL values in
+	mpls_header.log, and hands the payload to Zeek's IP or Ethernet analyzer,
+	including Ethernet pseudowires with or without a control word.
+tags = mpls, MPLS, ics, ICS, CISA, INL, ICSNPP, icsnpp, zeek plugin, packet analyzer
 
 [template]
 source = https://github.com/zeek/package-template
@@ -16,4 +17,4 @@ features = plugin
 
 [template_vars]
 name = MPLS
-namespace = MPLSLogging
+namespace = ICSNPP

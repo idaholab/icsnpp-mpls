@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
-project(ZeekPluginMPLSLogging)
+project(ICSNPP_MPLS)
 
 include(ZeekPlugin)
 
-zeek_plugin_begin(Zeek MPLSLogging ${ZEEK_PLUGIN_BEGIN_OPTS})
+zeek_plugin_begin(ICSNPP MPLS ${ZEEK_PLUGIN_BEGIN_OPTS})
 zeek_plugin_cc(src/Plugin.cc src/MPLSLogging.cc)
 zeek_plugin_dist_files(README.md CHANGES LICENSE NOTICE.txt VERSION)
 zeek_plugin_scripts(scripts/__load__.zeek)
