@@ -14,7 +14,9 @@
 #include "MPLSLogging.h"
 
 #include <cstdio>
+#include <optional>
 #include <string>
+#include <type_traits>
 
 #include <zeek/Conn.h>
 #include <zeek/Event.h>
@@ -92,6 +94,22 @@ int ethernet_score(const uint8_t* d, size_t len) {
         default:
             return 1;
     }
+}
+
+// Packet::vlan and Packet::inner_vlan are uint32_t (0 meaning untagged)
+// before Zeek 8.2 and std::optional<VlanTag> from 8.2 on.
+template<typename T>
+std::optional<int64_t> vlan_id(const T& v) {
+    if constexpr ( std::is_integral_v<T> ) {
+        if ( v )
+            return static_cast<int64_t>(v);
+    }
+    else {
+        if ( v )
+            return static_cast<int64_t>(v->id);
+    }
+
+    return std::nullopt;
 }
 
 std::string format_mac(const u_char* m) {
@@ -289,10 +307,10 @@ bool MPLSLogger::AnalyzePacket(size_t len, const uint8_t* data, Packet* packet) 
             rec->Assign(src_l2_off, zeek::make_intrusive<zeek::StringVal>(format_mac(packet->l2_src)));
         if ( packet->l2_dst )
             rec->Assign(dst_l2_off, zeek::make_intrusive<zeek::StringVal>(format_mac(packet->l2_dst)));
-        if ( packet->vlan )
-            rec->Assign(vlan_off, zeek::val_mgr->Int(packet->vlan));
-        if ( packet->inner_vlan )
-            rec->Assign(inner_vlan_off, zeek::val_mgr->Int(packet->inner_vlan));
+        if ( auto vlan = vlan_id(packet->vlan) )
+            rec->Assign(vlan_off, zeek::val_mgr->Int(*vlan));
+        if ( auto inner_vlan = vlan_id(packet->inner_vlan) )
+            rec->Assign(inner_vlan_off, zeek::val_mgr->Int(*inner_vlan));
 
         rec->Assign(labels_off, labels);
         rec->Assign(tc_off, tcs);
