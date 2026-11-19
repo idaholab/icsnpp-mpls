@@ -27,10 +27,17 @@ else
     if [ "$1" = "zeekpath" ]; then
         zeek-config --zeekpath
     elif [ "$1" = "zeek_plugin_path" ]; then
-        # Combine the local tree and the system-wide path. This allows
-        # us to test on a local build or an installation made via zkg,
-        # which squirrels away the build.
-        echo "$(cd "${base}/../.." && pwd)/build:$(zeek-config --plugin_dir)"
+        # Use the local build when there is one, and the system-wide path
+        # (where zkg installs) otherwise. Listing both makes Zeek warn
+        # "ignoring dynamic plugin ... already found" whenever the package
+        # is also installed, which fails every test that expects an empty
+        # stderr, including zkg's own test run during an upgrade.
+        build="$(cd "${base}/../.." && pwd)/build"
+        if [ -f "${build}/__zeek_plugin__" ]; then
+            echo "${build}"
+        else
+            zeek-config --plugin_dir
+        fi
     elif [ "$1" = "path" ]; then
         echo "${PATH}"
     else
