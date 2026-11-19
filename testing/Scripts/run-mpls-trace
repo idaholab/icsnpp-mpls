@@ -1,0 +1,74 @@
+#! /usr/bin/env bash
+#
+# Runs one trace through Zeek with the MPLS plugin, mac-logging, and
+# vlan-logging, then writes order-independent summaries for btest-diff:
+#
+#   mpls.out   mpls_header.log rows (default summary mode) without
+#              timestamps or uids, sorted, followed by the packet total
+#   conn.out   conn.log rows with link-layer and VLAN fields, sorted
+#   weird.out  distinct weird names
+#
+# Exits non-zero if Zeek writes to stderr, or if mpls_header.log carries a
+# uid that conn.log doesn't have.
+#
+# Usage: run-mpls-trace <trace> [extra zeek arguments...]
+
+set -euo pipefail
+
+trace="$1"
+shift
+
+if ! zeek -C -r "$trace" \
+        policy/protocols/conn/mac-logging \
+        policy/protocols/conn/vlan-logging \
+        "$@" >zeek-output 2>zeek-error; then
+    cat zeek-error >&2
+    exit 1
+fi
+
+if [ -s zeek-error ]; then
+    cat zeek-error >&2
+    exit 1
+fi
+
+if [ -f mpls_header.log ]; then
+    zeek-cut id.orig_h id.orig_p id.resp_h id.resp_p is_orig \
+        src_l2_addr dst_l2_addr vlan inner_vlan \
+        labels traffic_class time_to_live payload packets \
+        <mpls_header.log | LC_ALL=C sort >mpls.out
+    zeek-cut packets <mpls_header.log |
+        awk '{ total += $1 } END { print "total_packets", total + 0 }' >>mpls.out
+else
+    echo "no mpls_header.log" >mpls.out
+fi
+
+if [ -f conn.log ]; then
+    zeek-cut id.orig_h id.orig_p id.resp_h id.resp_p proto service \
+        orig_l2_addr resp_l2_addr vlan inner_vlan orig_pkts resp_pkts \
+        <conn.log | LC_ALL=C sort >conn.out
+else
+    echo "no conn.log" >conn.out
+fi
+
+if [ -f weird.log ]; then
+    zeek-cut name <weird.log | LC_ALL=C sort -u >weird.out
+else
+    echo "no weird.log" >weird.out
+fi
+
+# Every uid mpls_header.log names should belong to a logged connection.
+if [ -f mpls_header.log ]; then
+    zeek-cut uid <mpls_header.log | awk '$1 != "-"' | LC_ALL=C sort -u >mpls-uids
+    if [ -f conn.log ]; then
+        zeek-cut uid <conn.log | LC_ALL=C sort -u >conn-uids
+    else
+        : >conn-uids
+    fi
+
+    orphans="$(LC_ALL=C comm -23 mpls-uids conn-uids)"
+    if [ -n "$orphans" ]; then
+        echo "uids in mpls_header.log missing from conn.log:" >&2
+        echo "$orphans" >&2
+        exit 1
+    fi
+fi

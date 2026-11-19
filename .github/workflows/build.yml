@@ -59,7 +59,7 @@ jobs:
       - name: Verify plugin registration
         shell: bash
         run: |
-          plugin_listing="$(ZEEK_PLUGIN_PATH="${PWD}/build" zeek -NN Zeek::MPLSLogging)"
+          plugin_listing="$(ZEEK_PLUGIN_PATH="${PWD}/build" zeek -NN ICSNPP::MPLS)"
           grep -q "ANALYZER_MPLSLOGGER" <<<"${plugin_listing}"
 
       - name: Run tests
